@@ -48,12 +48,14 @@ fi
 TARGET_LOCALE="vzw"
 
 #uncomment to add custom version string
-#export KBUILD_BUILD_VERSION="nubernel-EC05_v0.0.0"
+CUSTOMVERSION="EpicMTD-TWKernel-v1.0"
+export KBUILD_BUILD_VERSION=$CUSTOMVERSION
+LOCALVERSION_STRING="-$CUSTOMVERSION"
 DEFCONFIG_STRING=victory_8G_defconfig
 
 #TOOLCHAIN=`pwd`/toolchains/android-toolchain-4.4.3/bin
 #TOOLCHAIN_PREFIX=arm-linux-androideabi-
-TOOLCHAIN=/usr/local/toolchain/arm-2009q3/bin
+TOOLCHAIN=/home/dan/arm-2009q3/bin
 TOOLCHAIN_PREFIX=arm-none-linux-gnueabi-
 
 KERNEL_BUILD_DIR=`pwd`/Kernel
@@ -105,8 +107,7 @@ BUILD_KERNEL()
 	pushd $KERNEL_BUILD_DIR
 		export KDIR=`pwd`
 		make ARCH=arm $DEFCONFIG_STRING
-#		make -j$CPU_JOB_NUM ARCH=arm CROSS_COMPILE=$TOOLCHAIN/$TOOLCHAIN_PREFIX
-		make V=1 -j$CPU_JOB_NUM ARCH=arm CROSS_COMPILE=$TOOLCHAIN/$TOOLCHAIN_PREFIX 2>&1 | tee make.out
+		make V=1 -j$CPU_JOB_NUM ARCH=arm CROSS_COMPILE=$TOOLCHAIN/$TOOLCHAIN_PREFIX LOCALVERSION=$LOCALVERSION_STRING 2>&1 | tee make.out
 	popd
 }
 
