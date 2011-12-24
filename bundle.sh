@@ -8,6 +8,7 @@ fi
 
 USER=$1
 
+# Initramfs_mtd (second boot stage)
 cd initramfs_mtd
 
 # Set permissions
@@ -25,3 +26,25 @@ find ./ | cpio -o -c | gzip > ../boot.cpio.gz
 # Change back owner
 find ./ -exec chown -R $USER:$USER '{}' \;
 chown $USER:$USER ../boot.cpio.gz
+cd ..
+
+# Recovery
+cd recovery
+
+# Set permissions
+find ./ -type f -exec chmod 644 '{}' \;
+find ./ -type d -exec chmod 755 '{}' \;
+chmod 750 init init.rc
+find ./sbin -exec chmod 750 '{}' \;
+
+# Change owner to root
+find ./ -exec chown -R root:root '{}' \;
+
+# Bundle
+find ./ | cpio -o -c | gzip > ../recovery.cpio.gz
+
+# Change back owner
+find ./ -exec chown -R $USER:$USER '{}' \;
+chown $USER:$USER ../recovery.cpio.gz
+cd ..
+
