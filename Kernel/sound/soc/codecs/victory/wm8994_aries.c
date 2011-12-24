@@ -20,9 +20,6 @@
 #include <plat/map-base.h>
 #include <mach/regs-clock.h>
 #include "wm8994_samsung.h"
-#ifdef CONFIG_SND_VOODOO
-#include "wm8994_voodoo.h"
-#endif
 
 /*
  * Debug Feature
@@ -1326,9 +1323,6 @@ void wm8994_record_main_mic(struct snd_soc_codec *codec)
 				/****************DRC END************************/
 			}
 
-#ifdef CONFIG_SND_VOODOO_RECORD_PRESETS
-	voodoo_hook_record_main_mic();
-#endif
 }
 
 void wm8994_record_bluetooth(struct snd_soc_codec *codec)
