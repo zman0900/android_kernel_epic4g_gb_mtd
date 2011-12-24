@@ -4,6 +4,8 @@
 *.ko
 *.o
 *.order
+boot.cpio.gz
+boot.img
 Kernel/.config
 Kernel/.missing-syscalls.d
 Kernel/.tmp_System.map
@@ -47,6 +49,7 @@ Kernel/include/linux/version.h
 Kernel/kernel/bounds.s
 Kernel/kernel/config_data.gz
 Kernel/kernel/config_data.h
+Kernel/kernel/configs.mod.c
 Kernel/kernel/timeconst.h
 Kernel/lib/crc32table.h
 Kernel/lib/gen_crc32table
@@ -70,5 +73,6 @@ Kernel/usr/gen_init_cpio
 Kernel/usr/initramfs_data.cpio
 Kernel/make.out
 Kernel/vmlinux
+recovery.cpio.gz
 
 .DS_Store
