@@ -182,6 +182,11 @@ static void cpufreq_interactive_timer(unsigned long data)
 	unsigned int index;
 	unsigned long flags;
 
+	smp_rmb();
+
+	if (!pcpu->governor_enabled)
+		goto exit;
+
 	/*
 	 * Once pcpu->timer_run_time is updated to >= pcpu->idle_exit_time,
 	 * this lets idle exit know the current idle time sample has
@@ -305,7 +310,7 @@ rearm_if_notmax:
 		goto exit;
 
 rearm:
-	if (!timer_pending(&pcpu->cpu_timer) && pcpu->governor_enabled) {
+	if (!timer_pending(&pcpu->cpu_timer)) {
 		/*
 		 * If already at min: if that CPU is idle, don't set timer.
 		 * Else cancel the timer if that CPU goes idle.  We don't
@@ -474,6 +479,8 @@ static int cpufreq_interactive_up_task(void *data)
 				      pcpu->target_freq);
 			}
 
+			smp_rmb();
+
 			if (!pcpu->governor_enabled)
 				continue;
 
@@ -504,6 +511,8 @@ static void cpufreq_interactive_freq_down(struct work_struct *work)
 
 	for_each_cpu(cpu, &tmp_mask) {
 		pcpu = &per_cpu(cpuinfo, cpu);
+
+		smp_rmb();
 
 		if (!pcpu->governor_enabled)
 			continue;
@@ -578,6 +587,7 @@ static int cpufreq_governor_interactive(struct cpufreq_policy *new_policy,
 			get_cpu_idle_time_us(new_policy->cpu,
 					     &pcpu->freq_change_time);
 		pcpu->governor_enabled = 1;
+		smp_wmb();
 		/*
 		 * Do not register the idle hook and create sysfs
 		 * entries if we have already done so.
@@ -596,6 +606,7 @@ static int cpufreq_governor_interactive(struct cpufreq_policy *new_policy,
 
 	case CPUFREQ_GOV_STOP:
 		pcpu->governor_enabled = 0;
+		smp_wmb();
 		del_timer_sync(&pcpu->cpu_timer);
 		flush_work(&freq_scale_down_work);
 		/*
@@ -654,7 +665,7 @@ static int __init cpufreq_interactive_init(void)
 
 	/* No rescuer thread, bind to CPU queuing the work for possibly
 	   warm cache (probably doesn't matter much). */
-	down_wq = create_workqueue("knteractive_down");
+	down_wq = alloc_workqueue("knteractive_down", 0, 1);
 
 	if (! down_wq)
 		goto err_freeuptask;
