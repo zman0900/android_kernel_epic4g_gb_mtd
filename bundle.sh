@@ -13,8 +13,7 @@ cd initramfs_mtd
 # Set permissions
 find ./ -type f -exec chmod 644 '{}' \;
 find ./ -type d -exec chmod 755 '{}' \;
-chmod 750 init
-find ./ -name '*.rc' -exec chmod 750 '{}' \;
+chmod 750 init init.rc init.goldfish.rc
 find ./sbin -exec chmod 750 '{}' \;
 
 # Change owner to root
