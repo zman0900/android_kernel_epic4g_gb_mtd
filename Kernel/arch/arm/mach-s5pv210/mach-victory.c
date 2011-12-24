@@ -158,8 +158,7 @@ static int victory_notifier_call(struct notifier_block *this,
 		else if (!strcmp((char *)_cmd, "arm9_fota"))
 			mode = REBOOT_MODE_ARM9_FOTA;
 		else if (!strcmp((char *)_cmd, "recovery"))
-		   //Originally mode = REBOOT_MODE_RECOVERY;
-			mode = REBOOT_MODE_ARM11_FOTA;
+			mode = REBOOT_MODE_RECOVERY;
 		else if (!strcmp((char *)_cmd, "bootloader"))
 			mode = REBOOT_MODE_FAST_BOOT;
 		else if (!strcmp((char *)_cmd, "download"))
@@ -3141,9 +3140,7 @@ static struct platform_device *victory_devices[] __initdata = {
 #ifdef CONFIG_FIQ_DEBUGGER
 	&s5pv210_device_fiqdbg_uart2,
 #endif
-#ifdef CONFIG_MTD_ONENAND
-    &s5p_device_onenand,
-#endif
+	&s5pc110_device_onenand,
 #ifdef CONFIG_RTC_DRV_S3C
 	&s5p_device_rtc,
 #endif
@@ -3262,7 +3259,7 @@ static void __init victory_map_io(void)
 	s3c24xx_init_uarts(victory_uartcfgs, ARRAY_SIZE(victory_uartcfgs));
 	s5p_reserve_bootmem(victory_media_devs, ARRAY_SIZE(victory_media_devs));
 #ifdef CONFIG_MTD_ONENAND
-	s5p_device_onenand.name = "s5p-onenand";
+	s5pc110_device_onenand.name = "s5pc110-onenand";
 #endif
 }
 
