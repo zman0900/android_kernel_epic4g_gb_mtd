@@ -7,6 +7,7 @@
 boot.cpio.gz
 boot.img
 Kernel/.config
+Kernel/.config.old
 Kernel/.missing-syscalls.d
 Kernel/.tmp_System.map
 Kernel/.tmp_kallsyms1.S

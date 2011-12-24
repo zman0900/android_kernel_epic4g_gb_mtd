@@ -148,6 +148,8 @@ PRINT_TITLE
 #BUILD_MODULE
 CLEAN_ZIMAGE
 BUILD_KERNEL
+`pwd`/bundle.sh
+python `pwd`/mkshbootimg.py `pwd`/boot.img `pwd`/Kernel/arch/arm/boot/zImage `pwd`/boot.cpio.gz `pwd`/recovery.cpio.gz 
 END_TIME=`date +%s`
 let "ELAPSED_TIME=$END_TIME-$START_TIME"
 echo "Total compile time is $ELAPSED_TIME seconds"

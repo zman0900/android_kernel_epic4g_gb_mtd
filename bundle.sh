@@ -8,6 +8,11 @@ fi
 
 USER=$1
 
+# Clear old stuff
+rm -f `pwd`/boot.img
+rm -f `pwd`/boot.cpio.gz
+rm -f `pwd`/recovery.cpio.gz
+
 # Initramfs_mtd (second boot stage)
 cd initramfs_mtd
 
