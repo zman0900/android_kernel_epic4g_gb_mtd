@@ -53,10 +53,8 @@ export KBUILD_BUILD_VERSION=$CUSTOMVERSION
 LOCALVERSION_STRING="-$CUSTOMVERSION"
 DEFCONFIG_STRING=victory_8G_defconfig
 
-#TOOLCHAIN=`pwd`/toolchains/android-toolchain-4.4.3/bin
-#TOOLCHAIN_PREFIX=arm-linux-androideabi-
-TOOLCHAIN=/home/dan/arm-2009q3/bin
-TOOLCHAIN_PREFIX=arm-none-linux-gnueabi-
+TOOLCHAIN=$HOME/arm-eabi-4.4.3/bin
+TOOLCHAIN_PREFIX=arm-eabi-
 
 KERNEL_BUILD_DIR=`pwd`/Kernel
 ANDROID_OUT_DIR=`pwd`/Android/out/target/product/SPH-D700
