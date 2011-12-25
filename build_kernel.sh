@@ -106,6 +106,9 @@ BUILD_KERNEL()
 		export KDIR=`pwd`
 		make ARCH=arm $DEFCONFIG_STRING
 		make V=1 -j$CPU_JOB_NUM ARCH=arm CROSS_COMPILE=$TOOLCHAIN/$TOOLCHAIN_PREFIX LOCALVERSION=$LOCALVERSION_STRING 2>&1 | tee make.out
+		rm -f ../initramfs_mtd/lib/modules/*
+		find ./ -name '*.ko' -exec cp '{}' ../initramfs_mtd/lib/modules/ \;
+		$TOOLCHAIN/$TOOLCHAIN_PREFIX'strip' --strip-debug ../initramfs_mtd/lib/modules/*
 	popd
 }
 

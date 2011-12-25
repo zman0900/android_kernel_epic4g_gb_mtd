@@ -164,7 +164,6 @@ on fs
     chown system system /data/db-journal
     chmod 0777 /data/db-journal
     mount yaffs2 mtd@cache /cache nosuid nodev
-    insmod /lib/modules/param.ko
     
 
 
@@ -771,12 +770,6 @@ service pppd_cdma /system/bin/pppd_runner
     oneshot
 
 # Custom Script Configuration
-service userscript /system/bin/sh /bin/userscript.sh
-	user root
-	group system
-	critical	
-	oneshot
-
 service bootanim /system/bin/bootanimation
 	user graphics
 	group graphics
@@ -788,6 +781,7 @@ service initd /system/bin/sysinit
 	group system
 	critical
 	oneshot
+# End custom
 
 service zygote /system/bin/app_process -Xzygote /system/bin --zygote --start-system-server
     socket zygote stream 666
