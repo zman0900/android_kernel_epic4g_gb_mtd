@@ -48,7 +48,7 @@ fi
 TARGET_LOCALE="vzw"
 
 #uncomment to add custom version string
-CUSTOMVERSION="EpicMTD-TWKernel-v1.0"
+CUSTOMVERSION="KernelSandersMTD-v1.0"
 export KBUILD_BUILD_VERSION=$CUSTOMVERSION
 LOCALVERSION_STRING="-$CUSTOMVERSION"
 DEFCONFIG_STRING=victory_8G_defconfig
