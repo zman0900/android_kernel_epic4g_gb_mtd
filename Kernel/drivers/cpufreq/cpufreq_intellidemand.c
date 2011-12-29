@@ -852,7 +852,9 @@ static bool active_state = true;
 static bool lmf_old_state = false;
 
 extern int cpufreq_set_limits(int cpu, unsigned int limit, unsigned int value);
+#ifdef CONFIG_HOTPLUG_CPU
 extern int cpufreq_set_limits_off(int cpu, unsigned int limit, unsigned int value);
+#endif
 extern suspend_state_t get_suspend_state(void);
 
 void set_lmf_browser_state(bool onOff)
@@ -950,11 +952,13 @@ static void do_dbs_timer(struct work_struct *work)
 				printk("LMF: CPU0 set max freq to 1.0GHz\n");
 				cpufreq_set_limits(BOOT_CPU, SET_MAX, ACTIVE_MAX_FREQ);
 				
+				#ifdef CONFIG_HOTPLUG_CPU
 				printk("LMF: CPU1 set max freq to 1.0GHz\n");
 				if (cpu_online(NON_BOOT_CPU))
 					cpufreq_set_limits(NON_BOOT_CPU, SET_MAX, ACTIVE_MAX_FREQ);
 				else
 					cpufreq_set_limits_off(NON_BOOT_CPU, SET_MAX, ACTIVE_MAX_FREQ);
+				#endif
 			}
 			
 			jiffies_old = 0;
@@ -1060,11 +1064,13 @@ static void do_dbs_timer(struct work_struct *work)
 								printk("LMF: CPU0 set max freq to 400MHz\n");
 								cpufreq_set_limits(BOOT_CPU, SET_MAX, INACTIVE_MAX_FREQ);
 								
+								#ifdef CONFIG_HOTPLUG_CPU
 								printk("LMF: CPU1 set max freq to 400MHz\n");
 								if (cpu_online(NON_BOOT_CPU))
 									cpufreq_set_limits(NON_BOOT_CPU, SET_MAX, INACTIVE_MAX_FREQ);
 								else
 									cpufreq_set_limits_off(NON_BOOT_CPU, SET_MAX, INACTIVE_MAX_FREQ);
+								#endif
 							}
 							else
 							{
@@ -1100,11 +1106,13 @@ static void do_dbs_timer(struct work_struct *work)
 								printk("LMF: CPU0 set max freq to 1.0GHz\n");
 								cpufreq_set_limits(BOOT_CPU, SET_MAX, ACTIVE_MAX_FREQ);
 								
+								#ifdef CONFIG_HOTPLUG_CPU
 								printk("LMF: CPU1 set max freq to 1.0GHz\n");
 								if (cpu_online(NON_BOOT_CPU))
 									cpufreq_set_limits(NON_BOOT_CPU, SET_MAX, ACTIVE_MAX_FREQ);
 								else
 									cpufreq_set_limits_off(NON_BOOT_CPU, SET_MAX, ACTIVE_MAX_FREQ);
+								#endif
 							}
 							else
 							{
