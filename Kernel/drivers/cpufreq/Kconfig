@@ -244,10 +244,10 @@ config CPU_FREQ_GOV_CONSERVATIVE
 	  If in doubt, say N.
 
 config CPU_FREQ_GOV_INTELLIDEMAND
-        tristate "'intellidemand' cpufreq governor"
-        depends on CPU_FREQ
-        help
-          'intellidemand' - an intelligent ondemand governor
+	tristate "'intellidemand' cpufreq governor"
+	depends on CPU_FREQ
+	help
+	  'intellidemand' - an intelligent ondemand governor
 
 config CPU_FREQ_GOV_SMARTASS2
 	tristate "'smartassV2' cpufreq governor"
@@ -258,18 +258,18 @@ config CPU_FREQ_GOV_SMARTASS2
 	  If in doubt, say N.
 
 config CPU_FREQ_GOV_LAGFREE
-        tristate "'lagfree' cpufreq governor"
-        depends on CPU_FREQ
-        help
-          'lagfree' - this driver is rather similar to the 'ondemand'
-          governor both in its source code and its purpose, the difference is
-          its optimisation for better suitability in a battery powered
-          environment. The frequency is gracefully increased and decreased
-          rather than jumping to 100% when speed is required.
+	tristate "'lagfree' cpufreq governor"
+	depends on CPU_FREQ
+	help
+	  'lagfree' - this driver is rather similar to the 'ondemand'
+	  governor both in its source code and its purpose, the difference is
+	  its optimisation for better suitability in a battery powered
+	  environment. The frequency is gracefully increased and decreased
+	  rather than jumping to 100% when speed is required.
 
-          To compile this driver as a module, choose M here: the
-          module will be called cpufreq_lagfree.
-          For details, take a look at linux/Documentation/cpu-freq.
-          If in doubt, say N.
+	  To compile this driver as a module, choose M here: the
+	  module will be called cpufreq_lagfree.
+	  For details, take a look at linux/Documentation/cpu-freq.
+	  If in doubt, say N.
 
 endif	# CPU_FREQ
