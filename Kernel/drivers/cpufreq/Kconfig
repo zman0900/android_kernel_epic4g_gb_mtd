@@ -243,12 +243,6 @@ config CPU_FREQ_GOV_CONSERVATIVE
 
 	  If in doubt, say N.
 
-config CPU_FREQ_GOV_INTELLIDEMAND
-        tristate "'intellidemand' cpufreq governor"
-        depends on CPU_FREQ
-        help
-          'intellidemand' - an intelligent ondemand governor
-
 config CPU_FREQ_GOV_SMARTASS2
 	tristate "'smartassV2' cpufreq governor"
 	depends on CPU_FREQ
