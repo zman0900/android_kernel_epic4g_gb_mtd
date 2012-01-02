@@ -465,4 +465,10 @@ config LEVEL
         help
           Say Y to enable debug level I/F support.
 
+config CUSTOM_VOLTAGE
+       bool "Support for Custom Voltage"
+       default y
+       help
+         Say Y here to enable Custom Voltage
+
 endif # MISC_DEVICES
