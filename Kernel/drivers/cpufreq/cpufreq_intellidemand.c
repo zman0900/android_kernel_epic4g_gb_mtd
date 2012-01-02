@@ -768,7 +768,7 @@ enum {
 
 #define SAMPLE_DURATION_MSEC	(10*1000) // 10 secs >= 10000 msec
 #define ACTIVE_DURATION_MSEC	(30*1000) // 0.5 mins
-#define INACTIVE_DURATION_MSEC	(30*1000) // 0.5 mins
+#define INACTIVE_DURATION_MSEC	(1*60*1000) // 1 mins
 #define MAX_ACTIVE_FREQ_LIMIT	75 // %
 #define MAX_INACTIVE_FREQ_LIMIT	90 // %
 #define ACTIVE_MAX_FREQ			1000000
@@ -776,6 +776,7 @@ enum {
 
 #define NUM_ACTIVE_LOAD_ARRAY	(ACTIVE_DURATION_MSEC/SAMPLE_DURATION_MSEC)
 #define NUM_INACTIVE_LOAD_ARRAY	(INACTIVE_DURATION_MSEC/SAMPLE_DURATION_MSEC)
+#define MAX(a,b)	(((a) > (b)) ? (a) : (b))
 
 static unsigned long lmf_active_load_limit = MAX_ACTIVE_FREQ_LIMIT;
 static unsigned long lmf_inactive_load_limit = MAX_INACTIVE_FREQ_LIMIT;
@@ -784,7 +785,7 @@ static unsigned long jiffies_old = 0;
 static unsigned long time_int = 0;
 static unsigned long load_state_total0  = 0;
 static unsigned long load_limit_index = 0;	
-static unsigned long load_limit_total[NUM_ACTIVE_LOAD_ARRAY];
+static unsigned long load_limit_total[MAX(NUM_ACTIVE_LOAD_ARRAY,NUM_INACTIVE_LOAD_ARRAY)];
 static unsigned long msecs_limit_total = 0;
 static bool active_state = true;
 static bool lmf_old_state = false;
@@ -836,7 +837,7 @@ static void do_dbs_timer(struct work_struct *work)
 	if (!(get_suspend_state()==PM_SUSPEND_ON))
 #endif
 #else
-	if (true)
+	if (false)
 #endif
 	{
 		if (lmf_old_state == true)
