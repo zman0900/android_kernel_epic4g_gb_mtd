@@ -767,30 +767,34 @@ enum {
 };
 
 #define SAMPLE_DURATION_MSEC	(10*1000) // 10 secs >= 10000 msec
-#define ACTIVE_DURATION_MSEC	(30*1000) // 0.5 mins
-#define INACTIVE_DURATION_MSEC	(1*60*1000) // 1 mins
-#define MAX_ACTIVE_FREQ_LIMIT	95 // %
-#define MAX_INACTIVE_FREQ_LIMIT	85 // %
+#define ACTIVE_DURATION_MSEC	(10*60*1000) // 10 mins
+#define INACTIVE_DURATION_MSEC	(2*60*1000) // 2 mins
+#define MAX_ACTIVE_FREQ_LIMIT	65 // %
+#define MAX_INACTIVE_FREQ_LIMIT	45 // %
 #define ACTIVE_MAX_FREQ			1000000
-#define INACTIVE_MAX_FREQ		200000
+#define INACTIVE_MAX_FREQ		400000
 
 #define NUM_ACTIVE_LOAD_ARRAY	(ACTIVE_DURATION_MSEC/SAMPLE_DURATION_MSEC)
 #define NUM_INACTIVE_LOAD_ARRAY	(INACTIVE_DURATION_MSEC/SAMPLE_DURATION_MSEC)
-#define MAX(a,b)	(((a) > (b)) ? (a) : (b))
 
 static unsigned long lmf_active_load_limit = MAX_ACTIVE_FREQ_LIMIT;
 static unsigned long lmf_inactive_load_limit = MAX_INACTIVE_FREQ_LIMIT;
 
 static unsigned long jiffies_old = 0;
 static unsigned long time_int = 0;
+static unsigned long time_int1 = 0;
 static unsigned long load_state_total0  = 0;
+static unsigned long load_state_total1  = 0;
 static unsigned long load_limit_index = 0;	
-static unsigned long load_limit_total[MAX(NUM_ACTIVE_LOAD_ARRAY,NUM_INACTIVE_LOAD_ARRAY)];
+static unsigned long load_limit_total[NUM_ACTIVE_LOAD_ARRAY];
 static unsigned long msecs_limit_total = 0;
 static bool active_state = true;
 static bool lmf_old_state = false;
 
 extern int cpufreq_set_limits(int cpu, unsigned int limit, unsigned int value);
+#ifdef CONFIG_HOTPLUG_CPU
+extern int cpufreq_set_limits_off(int cpu, unsigned int limit, unsigned int value);
+#endif
 extern suspend_state_t get_suspend_state(void);
 
 void set_lmf_active_load(unsigned long freq)
@@ -840,146 +844,191 @@ static void do_dbs_timer(struct work_struct *work)
 	if (false)
 #endif
 	{
-		if (lmf_old_state == true)
+		if (cpu == BOOT_CPU)
 		{
-			printk("LMF: disabled\n");
-			lmf_old_state = false;
-		}
+			if (lmf_old_state == true)
+			{
+				printk("LMF: disabled\n");
+				lmf_old_state = false;
+			}
 
-		if (!active_state)
-		{
-			/* set freq to 1.0GHz */
-			printk("LMF: CPU0 set max freq to 1.0GHz\n");
-			cpufreq_set_limits(BOOT_CPU, SET_MAX, ACTIVE_MAX_FREQ);
+			if (!active_state)
+			{
+				/* set freq to 1.0GHz */
+				printk("LMF: CPU0 set max freq to 1.0GHz\n");
+				cpufreq_set_limits(BOOT_CPU, SET_MAX, ACTIVE_MAX_FREQ);
+				
+				#ifdef CONFIG_HOTPLUG_CPU
+				printk("LMF: CPU1 set max freq to 1.0GHz\n");
+				if (cpu_online(NON_BOOT_CPU))
+					cpufreq_set_limits(NON_BOOT_CPU, SET_MAX, ACTIVE_MAX_FREQ);
+				else
+					cpufreq_set_limits_off(NON_BOOT_CPU, SET_MAX, ACTIVE_MAX_FREQ);
+				#endif
+			}
+			
+			jiffies_old = 0;
+			time_int = 0;
+			time_int1 = 0;
+			load_state_total0 = 0;
+			load_state_total1 = 0;
+			msecs_limit_total = 0;
+			load_limit_index = 0;
+			active_state = true;
 		}
-		
-		jiffies_old = 0;
-		time_int = 0;
-		load_state_total0 = 0;
-		msecs_limit_total = 0;
-		load_limit_index = 0;
-		active_state = true;
 	}
 	else // suspended or screen off
 	{
 		struct cpufreq_policy *policy;
 		unsigned long load_state_cpu = 0;
 		unsigned int delay_msec = 0;
+		unsigned long load_total  = 0;
 		unsigned long jiffies_cur = jiffies;
 		
-		if (lmf_old_state == false)
+		if (cpu == NON_BOOT_CPU)
 		{
-			printk("LMF: enabled\n");
-			lmf_old_state = true;
-		}
+			delay_msec = (dbs_tuners_ins.sampling_rate * dbs_info->rate_mult) / 1000;
+			policy = dbs_info->cur_policy;
+			load_state_cpu = ((policy->cur) * delay_msec)/10000;
 
-		if (jiffies_old == 0) 
-		{
-			jiffies_old = jiffies_cur;
+			time_int1 += delay_msec;
+			load_state_total1 += load_state_cpu;
 		}
 		else
 		{
-			delay_msec = jiffies_to_msecs(jiffies_cur - jiffies_old);
-			jiffies_old = jiffies_cur;
-			policy = dbs_info->cur_policy;
-			load_state_cpu = ((policy->cur) * delay_msec)/10000;
-			
-			time_int += delay_msec;
-			load_state_total0 += load_state_cpu;			
-			
-			/* average */
-			if (time_int >= SAMPLE_DURATION_MSEC)
+			if (lmf_old_state == false)
 			{
-				int i = 0;
-				unsigned long ave_max = 0;
-				unsigned long average = 0;
-				unsigned long average_dec = 0;
-				unsigned long total_load = 0;
+				printk("LMF: enabled\n");
+				lmf_old_state = true;
+			}
 
-				ave_max = (time_int / 10) * (ACTIVE_MAX_FREQ/1000);
-				average = (load_state_total0 * 100) / ave_max;
-				average_dec = (load_state_total0  * 100) % ave_max;
-
-				msecs_limit_total += time_int;
-				load_limit_total[load_limit_index++] = average;
-
-				printk("LMF: average = %ld.%ld, (%ld) (%ld) (%ld:%ld)\n", 
-					average, average_dec, time_int, load_state_total0, load_limit_index-1, msecs_limit_total);
-
-				time_int = 0;
-				load_state_total0 = 0;
-
-				/* active */
-				if (active_state)
+			if (jiffies_old == 0) 
+			{
+				jiffies_old = jiffies_cur;
+			}
+			else
+			{
+				delay_msec = jiffies_to_msecs(jiffies_cur - jiffies_old);
+				jiffies_old = jiffies_cur;
+				policy = dbs_info->cur_policy;
+				load_state_cpu = ((policy->cur) * delay_msec)/10000;
+				
+				time_int += delay_msec;
+				load_state_total0 += load_state_cpu;			
+				
+				/* average */
+				if (time_int >= SAMPLE_DURATION_MSEC)
 				{
-					if (load_limit_index >= NUM_ACTIVE_LOAD_ARRAY)
-					{
-						load_limit_index = 0;
-					}
-					
-					if (msecs_limit_total > ACTIVE_DURATION_MSEC)
-					{
-						for (i=0; i<NUM_ACTIVE_LOAD_ARRAY; i++)
-						{
-							total_load += load_limit_total[i];
-						}
+					int i = 0;
+					unsigned long ave_max = 0;
+					unsigned long average = 0;
+					unsigned long average_dec = 0;
+					unsigned long total_load = 0;
 
-						average = total_load / NUM_ACTIVE_LOAD_ARRAY;
-						average_dec = total_load % NUM_ACTIVE_LOAD_ARRAY;
-						printk("LMF:ACTIVE: total_avg = %ld.%ld\n", average, average_dec);
+					load_total = load_state_total0 + load_state_total1;
+					ave_max = (time_int / 10) * ((ACTIVE_MAX_FREQ/1000) * 2);
+					average = (load_total * 100) / ave_max;
+					average_dec = (load_total  * 100) % ave_max;
 
-						if (average < lmf_active_load_limit)
+					msecs_limit_total += time_int;
+					load_limit_total[load_limit_index++] = average;
+
+					//printk("LMF: average = %ld.%ld, (%ld:%ld) (%ld:%ld) (%ld:%ld)\n", 
+					//	average, average_dec, time_int, time_int1, load_state_total0, load_state_total1, load_limit_index-1, msecs_limit_total);
+
+					time_int = 0;
+					time_int1 = 0;
+					load_state_total0 = 0;
+					load_state_total1 = 0;
+
+					/* active */
+					if (active_state)
+					{
+						if (load_limit_index >= NUM_ACTIVE_LOAD_ARRAY)
 						{
-							msecs_limit_total = 0;
 							load_limit_index = 0;
-							active_state = false;
-
-							/* set freq to 200MHz */
-							printk("LMF: CPU0 set max freq to 200MHz\n");
-							cpufreq_set_limits(BOOT_CPU, SET_MAX, INACTIVE_MAX_FREQ);
 						}
-						else
+						
+						if (msecs_limit_total > ACTIVE_DURATION_MSEC)
 						{
-							msecs_limit_total = ACTIVE_DURATION_MSEC; // to prevent overflow
+							for (i=0; i<NUM_ACTIVE_LOAD_ARRAY; i++)
+							{
+								total_load += load_limit_total[i];
+							}
+
+							average = total_load / NUM_ACTIVE_LOAD_ARRAY;
+							average_dec = total_load % NUM_ACTIVE_LOAD_ARRAY;
+							//printk("LMF:ACTIVE: total_avg = %ld.%ld\n", average, average_dec);
+
+							if (average > lmf_active_load_limit)
+							{
+								msecs_limit_total = 0;
+								load_limit_index = 0;
+								active_state = false;
+
+								/* set freq to 400MHz */
+								printk("LMF: CPU0 set max freq to 400MHz\n");
+								cpufreq_set_limits(BOOT_CPU, SET_MAX, INACTIVE_MAX_FREQ);
+								
+								#ifdef CONFIG_HOTPLUG_CPU
+								printk("LMF: CPU1 set max freq to 400MHz\n");
+								if (cpu_online(NON_BOOT_CPU))
+									cpufreq_set_limits(NON_BOOT_CPU, SET_MAX, INACTIVE_MAX_FREQ);
+								else
+									cpufreq_set_limits_off(NON_BOOT_CPU, SET_MAX, INACTIVE_MAX_FREQ);
+								#endif
+							}
+							else
+							{
+								msecs_limit_total = ACTIVE_DURATION_MSEC; // to prevent overflow
+							}
 						}
 					}
-				}
-				else /* inactive */
-				{
-					if (load_limit_index >= NUM_INACTIVE_LOAD_ARRAY)
+					else /* inactive */
 					{
-						load_limit_index = 0;
-					}
-					
-					if (msecs_limit_total > INACTIVE_DURATION_MSEC)
-					{
-						for (i=0; i<NUM_INACTIVE_LOAD_ARRAY; i++)
+						if (load_limit_index >= NUM_INACTIVE_LOAD_ARRAY)
 						{
-							total_load += load_limit_total[i];
-						}
-
-						average = total_load / NUM_INACTIVE_LOAD_ARRAY;
-						average_dec = total_load % NUM_INACTIVE_LOAD_ARRAY;
-						printk("LMF:INACTIVE: total_avg = %ld.%ld\n", average, average_dec);
-
-						if (average > lmf_inactive_load_limit)
-						{
-							msecs_limit_total = 0;
 							load_limit_index = 0;
-							active_state = true;
-
-							/* set freq to 1.0GHz */
-							printk("LMF: CPU0 set max freq to 1.0GHz\n");
-							cpufreq_set_limits(BOOT_CPU, SET_MAX, ACTIVE_MAX_FREQ);
 						}
-						else
+						
+						if (msecs_limit_total > INACTIVE_DURATION_MSEC)
 						{
-							msecs_limit_total = INACTIVE_DURATION_MSEC; // to prevent overflow
+							for (i=0; i<NUM_INACTIVE_LOAD_ARRAY; i++)
+							{
+								total_load += load_limit_total[i];
+							}
+
+							average = total_load / NUM_INACTIVE_LOAD_ARRAY;
+							average_dec = total_load % NUM_INACTIVE_LOAD_ARRAY;
+							//printk("LMF:INACTIVE: total_avg = %ld.%ld\n", average, average_dec);
+
+							if (average < lmf_inactive_load_limit)
+							{
+								msecs_limit_total = 0;
+								load_limit_index = 0;
+								active_state = true;
+
+								/* set freq to 1.0GHz */
+								printk("LMF: CPU0 set max freq to 1.0GHz\n");
+								cpufreq_set_limits(BOOT_CPU, SET_MAX, ACTIVE_MAX_FREQ);
+								
+								#ifdef CONFIG_HOTPLUG_CPU
+								printk("LMF: CPU1 set max freq to 1.0GHz\n");
+								if (cpu_online(NON_BOOT_CPU))
+									cpufreq_set_limits(NON_BOOT_CPU, SET_MAX, ACTIVE_MAX_FREQ);
+								else
+									cpufreq_set_limits_off(NON_BOOT_CPU, SET_MAX, ACTIVE_MAX_FREQ);
+								#endif
+							}
+							else
+							{
+								msecs_limit_total = INACTIVE_DURATION_MSEC; // to prevent overflow
+							}
 						}
 					}
 				}
 			}
-		}
+		}	
 	}
 #endif
 
