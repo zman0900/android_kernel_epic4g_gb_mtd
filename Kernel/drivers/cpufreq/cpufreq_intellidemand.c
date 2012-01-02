@@ -284,10 +284,26 @@ show_one(ignore_nice_load, ignore_nice);
 show_one(powersave_bias, powersave_bias);
 
 #ifdef CONFIG_SEC_LIMIT_MAX_FREQ // limit max freq
+void set_lmf_browser_state(bool onOff);
+void set_lmf_temp_state(bool onOff);
 void set_lmf_active_load(unsigned long freq);
 void set_lmf_inactive_load(unsigned long freq);
+bool get_lmf_browser_state(void);
+bool get_lmf_temp_state(void);
 unsigned long get_lmf_active_load(void);
 unsigned long get_lmf_inactive_load(void);
+
+static ssize_t show_lmf_temp(struct kobject *kobj,
+				      struct attribute *attr, char *buf)
+{
+	return sprintf(buf, "%u\n", get_lmf_temp_state());
+}
+
+static ssize_t show_lmf_browser(struct kobject *kobj,
+				      struct attribute *attr, char *buf)
+{
+	return sprintf(buf, "%u\n", get_lmf_browser_state());
+}
 
 static ssize_t show_lmf_active_load(struct kobject *kobj,
 				      struct attribute *attr, char *buf)
@@ -482,6 +498,40 @@ static ssize_t store_powersave_bias(struct kobject *a, struct attribute *b,
 }
 
 #ifdef CONFIG_SEC_LIMIT_MAX_FREQ // limit max freq
+static ssize_t store_lmf_temp(struct kobject *a, struct attribute *b,
+				   const char *buf, size_t count)
+{
+	unsigned int input;
+	int ret;
+
+	ret = sscanf(buf, "%u", &input);
+	if (ret != 1)
+		return -EINVAL;
+
+	mutex_lock(&dbs_mutex);
+	set_lmf_temp_state(input);
+	mutex_unlock(&dbs_mutex);
+
+	return count;
+}
+
+static ssize_t store_lmf_browser(struct kobject *a, struct attribute *b,
+				   const char *buf, size_t count)
+{
+	unsigned int input;
+	int ret;
+
+	ret = sscanf(buf, "%u", &input);
+	if (ret != 1)
+		return -EINVAL;
+
+	mutex_lock(&dbs_mutex);
+	set_lmf_browser_state(input);
+	mutex_unlock(&dbs_mutex);
+
+	return count;
+}
+
 static ssize_t store_lmf_active_load(struct kobject *a, struct attribute *b,
 				   const char *buf, size_t count)
 {
@@ -525,6 +575,8 @@ define_one_global_rw(sampling_down_factor);
 define_one_global_rw(ignore_nice_load);
 define_one_global_rw(powersave_bias);
 #ifdef CONFIG_SEC_LIMIT_MAX_FREQ // limit max freq
+define_one_global_rw(lmf_temp);
+define_one_global_rw(lmf_browser);
 define_one_global_rw(lmf_active_load);
 define_one_global_rw(lmf_inactive_load);
 #endif
@@ -539,6 +591,8 @@ static struct attribute *dbs_attributes[] = {
 	&powersave_bias.attr,
 	&io_is_busy.attr,
 #ifdef CONFIG_SEC_LIMIT_MAX_FREQ // limit max freq
+	&lmf_temp.attr,
+	&lmf_browser.attr,
 	&lmf_active_load.attr,
 	&lmf_inactive_load.attr,
 #endif
@@ -751,6 +805,9 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
 	}
 }
 
+#ifdef CONFIG_DETECT_BROWSER_STATE
+extern bool yamato_busy;
+#endif
 
 #ifdef CONFIG_SEC_LIMIT_MAX_FREQ // limit max freq
 
@@ -777,6 +834,9 @@ enum {
 #define NUM_ACTIVE_LOAD_ARRAY	(ACTIVE_DURATION_MSEC/SAMPLE_DURATION_MSEC)
 #define NUM_INACTIVE_LOAD_ARRAY	(INACTIVE_DURATION_MSEC/SAMPLE_DURATION_MSEC)
 
+static bool lmf_browser_state = false;
+static bool lmf_temp_state = true; // temp is not used now
+
 static unsigned long lmf_active_load_limit = MAX_ACTIVE_FREQ_LIMIT;
 static unsigned long lmf_inactive_load_limit = MAX_INACTIVE_FREQ_LIMIT;
 
@@ -797,6 +857,22 @@ extern int cpufreq_set_limits_off(int cpu, unsigned int limit, unsigned int valu
 #endif
 extern suspend_state_t get_suspend_state(void);
 
+void set_lmf_browser_state(bool onOff)
+{
+	if (onOff)
+		lmf_browser_state = true;
+	else
+		lmf_browser_state = false;
+}
+
+void set_lmf_temp_state(bool onOff)
+{
+	if (onOff)
+		lmf_temp_state = true;
+	else
+		lmf_temp_state = false;
+}
+
 void set_lmf_active_load(unsigned long freq)
 {
 	lmf_active_load_limit = freq;
@@ -805,6 +881,20 @@ void set_lmf_active_load(unsigned long freq)
 void set_lmf_inactive_load(unsigned long freq)
 {
 	lmf_inactive_load_limit = freq;
+}
+
+bool get_lmf_browser_state(void)
+{
+#ifdef CONFIG_DETECT_BROWSER_STATE
+	return yamato_busy;
+#else
+	return lmf_browser_state;
+#endif
+}
+
+bool get_lmf_temp_state(void)
+{
+	return lmf_temp_state;
 }
 
 unsigned long get_lmf_active_load(void)
@@ -836,12 +926,16 @@ static void do_dbs_timer(struct work_struct *work)
 
 #ifdef CONFIG_HAS_EARLYSUSPEND
 #ifdef _LIMIT_LCD_OFF_CPU_MAX_FREQ_
-	if (cpufreq_gov_lcd_status)
+#ifdef CONFIG_DETECT_BROWSER_STATE
+	if (!yamato_busy || !lmf_temp_state || !cpufreq_gov_lcd_status)
 #else
-	if (!(get_suspend_state()==PM_SUSPEND_ON))
+	if (!lmf_browser_state || !lmf_temp_state || !cpufreq_gov_lcd_status)
 #endif
 #else
-	if (false)
+	if (!lmf_browser_state || !lmf_temp_state || !(get_suspend_state()==PM_SUSPEND_ON))
+#endif
+#else
+	if (!lmf_browser_state || !lmf_temp_state)
 #endif
 	{
 		if (cpu == BOOT_CPU)
@@ -877,7 +971,7 @@ static void do_dbs_timer(struct work_struct *work)
 			active_state = true;
 		}
 	}
-	else // suspended or screen off
+	else // lmf_browser_state && lmf_temp_state -> TRUE
 	{
 		struct cpufreq_policy *policy;
 		unsigned long load_state_cpu = 0;
