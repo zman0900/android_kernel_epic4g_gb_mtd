@@ -2,6 +2,7 @@
 *.cmd
 *.lzma
 *.ko
+*.mod.c
 *.o
 *.o.d
 *.order
@@ -71,11 +72,8 @@ Kernel/usr/gen_init_cpio
 Kernel/usr/initramfs_data.cpio
 Kernel/make.out
 Kernel/vmlinux
-
 .DS_Store
-
 Kernel/make.clean.out
 Kernel/.config.old
-Kernel/drivers/net/wireless/bcm4329/bcm4329.mod.c
 Kernel/make.mrproper.out
 Kernel/scripts/kconfig/mconf
