@@ -75,3 +75,7 @@ Kernel/vmlinux
 .DS_Store
 
 Kernel/make.clean.out
+Kernel/.config.old
+Kernel/drivers/net/wireless/bcm4329/bcm4329.mod.c
+Kernel/make.mrproper.out
+Kernel/scripts/kconfig/mconf

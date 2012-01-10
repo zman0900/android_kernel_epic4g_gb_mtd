@@ -55,9 +55,11 @@ DEFCONFIG_STRING=cyanogenmod_epicmtd_defconfig
 
 TOOLCHAIN=$HOME/arm-eabi-4.4.3/bin 
 TOOLCHAIN_PREFIX=arm-eabi-
+PYTHON=python
 
 KERNEL_BUILD_DIR=`pwd`/Kernel
 ANDROID_OUT_DIR=`pwd`/Android/out/target/product/SPH-D700
+ZIP_BUILD_DIR=`pwd`/zip
 
 export PRJROOT=$PWD
 export PROJECT_NAME
@@ -110,6 +112,19 @@ BUILD_KERNEL()
 	popd
 }
 
+BUILD_ZIP()
+{
+	pushd $ZIP_BUILD_DIR
+		mkdir -p system/lib/modules
+		find $KERNEL_BUILD_DIR -name '*.ko' -exec cp '{}' system/lib/modules/ \;
+		$TOOLCHAIN/$TOOLCHAIN_PREFIX'strip' --strip-debug system/lib/modules/*
+		$PYTHON $PRJROOT/mkshbootimg.py boot.img $KERNEL_BUILD_DIR/arch/arm/boot/zImage $PRJROOT/boot.cpio.gz $PRJROOT/recovery.cpio.gz
+		zip -r $PRJROOT/$CUSTOMVERSION.zip ./*
+		rm -rf boot.img
+		rm -rf system
+	popd
+}
+
 # print title
 PRINT_USAGE()
 {
@@ -147,6 +162,7 @@ PRINT_TITLE
 #BUILD_MODULE
 CLEAN_ZIMAGE
 BUILD_KERNEL
+BUILD_ZIP
 END_TIME=`date +%s`
 let "ELAPSED_TIME=$END_TIME-$START_TIME"
 echo "Total compile time is $ELAPSED_TIME seconds"
