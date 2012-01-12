@@ -14,6 +14,8 @@ package_extract_file("bml_over_mtd", "/tmp/bml_over_mtd");
 set_perm(0, 0, 0777, "/tmp/bml_over_mtd");
 package_extract_file("bml_over_mtd.sh", "/tmp/bml_over_mtd.sh");
 set_perm(0, 0, 0777, "/tmp/bml_over_mtd.sh");
+package_extract_file("zipalign.sh", "/tmp/zipalign.sh");
+set_perm(0, 0, 0777, "/tmp/zipalign.sh");
 assert(mount("yaffs2", "MTD", "system", "/system"));
 
 ui_print("Flashing image...");
@@ -27,6 +29,13 @@ ui_print("Copying modules...");
 
 package_extract_dir("system", "/system");
 set_perm_recursive(0, 0, 0755, 0644, "/system/lib/modules");
+
+ui_print("Installing zipalign...");
+set_perm(0, 2000, 0750, "/system/etc/init.d/93zipalign");
+set_perm(0, 0, 0755, "/system/xbin/zipalign");
+
+ui_print("Zipaligning system apks...");
+run_program("/tmp/zipalign.sh");
 
 show_progress(0.100000, 0);
 ui_print("Done, clear dalvik and cache then reboot");

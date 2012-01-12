@@ -121,7 +121,7 @@ BUILD_ZIP()
 		$PYTHON $PRJROOT/mkshbootimg.py boot.img $KERNEL_BUILD_DIR/arch/arm/boot/zImage $PRJROOT/boot.cpio.gz $PRJROOT/recovery.cpio.gz
 		zip -r $PRJROOT/$CUSTOMVERSION.zip ./*
 		rm -rf boot.img
-		rm -rf system
+		rm -rf system/lib
 	popd
 }
 
