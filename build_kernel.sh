@@ -48,7 +48,7 @@ fi
 TARGET_LOCALE="vzw"
 
 #uncomment to add custom version string
-CUSTOMVERSION="KernelSandersCM-v4"
+CUSTOMVERSION="KernelSandersCM-v5"
 export KBUILD_BUILD_VERSION=$CUSTOMVERSION
 LOCALVERSION_STRING="-$CUSTOMVERSION"
 DEFCONFIG_STRING=cyanogenmod_epicmtd_defconfig
